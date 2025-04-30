@@ -27,6 +27,14 @@ extension GenerateDTOMacro: PeerMacro {
             "public var \($0.name): \($0.dtoType)"
         }.joined(separator: "\n")
         
+        let initParametersDecl = properties.map {
+            "\($0.name): \($0.dtoType)"
+        }.joined(separator: ",\n")
+        
+        let initPropertiesDecl = properties.map {
+            "self.\($0.name) = \($0.name)"
+        }.joined(separator: "\n")
+        
         let initDTOPropertiesDecl = properties.map {
             $0.initializationCode(fromModelToDTO: true)
         }.joined(separator: "\n")
@@ -34,6 +42,12 @@ extension GenerateDTOMacro: PeerMacro {
         let dtoDecl = """
         public struct \(dtoName): DTO {
             \(propertiesDecl)
+        
+            public init(
+                \(initParametersDecl)
+            ) {
+                \(initPropertiesDecl)
+            }
             
             public init(model: \(className)) {
                 \(initDTOPropertiesDecl)
