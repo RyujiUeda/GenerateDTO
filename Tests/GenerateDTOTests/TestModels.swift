@@ -6,6 +6,7 @@
 //
  
 import GenerateDTO
+import Foundation
 
 // MARK: - 基本テスト用モデル
 @GenerateDTO
@@ -159,5 +160,77 @@ public class MultipleNestedModel {
         self.b = b
         self.arrayOfA = arrayOfA
         self.optionalB = optionalB
+    }
+}
+
+// MARK: - カスタムイニシャライザテスト用モデル
+@GenerateDTO
+public class PersonForCustomInit {
+    public let name: String
+    public let age: Int
+    public let status: String
+    
+    public init(name: String, age: Int, status: String) {
+        self.name = name
+        self.age = age
+        self.status = status
+    }
+}
+
+// MARK: - パラメータ初期化詳細テスト用モデル
+@GenerateDTO
+public class DepartmentWithCode {
+    public let id: Int
+    public let name: String
+    public let code: String
+    
+    public init(id: Int, name: String, code: String) {
+        self.id = id
+        self.name = name
+        self.code = code
+    }
+}
+
+@GenerateDTO(nestedDTOs: ["DepartmentWithCode"])
+public class EmployeeWithDetails {
+    public let id: Int
+    public let name: String
+    public let email: String
+    public let department: DepartmentWithCode
+    public let startDate: Date
+    
+    public init(id: Int, name: String, email: String, department: DepartmentWithCode, startDate: Date) {
+        self.id = id
+        self.name = name
+        self.email = email
+        self.department = department
+        self.startDate = startDate
+    }
+}
+
+// MARK: - オプショナルパラメータテスト用モデル
+@GenerateDTO
+public class Profile {
+    public let bio: String
+    public let imageURL: String
+    
+    public init(bio: String, imageURL: String) {
+        self.bio = bio
+        self.imageURL = imageURL
+    }
+}
+
+@GenerateDTO(nestedDTOs: ["Profile"])
+public class User {
+    public let id: Int
+    public let username: String
+    public let email: String
+    public let profile: Profile?
+    
+    public init(id: Int, username: String, email: String, profile: Profile? = nil) {
+        self.id = id
+        self.username = username
+        self.email = email
+        self.profile = profile
     }
 }

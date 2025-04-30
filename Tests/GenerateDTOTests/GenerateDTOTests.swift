@@ -5,8 +5,9 @@
 //  Created by 上田龍二 on 2025/04/29.
 //
 
-import XCTest
 @testable import GenerateDTO
+import XCTest
+import Foundation
 
 // MARK: - テストクラス
 public final class GenerateDTOTests: XCTestCase {
@@ -181,5 +182,98 @@ public final class GenerateDTOTests: XCTestCase {
         XCTAssertEqual(convertedModel.arrayOfA.count, 2)
         XCTAssertEqual(convertedModel.arrayOfA[1].name, "Another A")
         XCTAssertEqual(convertedModel.optionalB?.value, 42)
+    }
+    
+    // MARK: - パラメータ初期化のテスト
+    public func testParameterInitialization() {
+        // DTOの直接初期化テスト
+        let dto = BasicModelDTO(id: 42, name: "Direct Init", isActive: false)
+        
+        XCTAssertEqual(dto.id, 42)
+        XCTAssertEqual(dto.name, "Direct Init")
+        XCTAssertEqual(dto.isActive, false)
+        
+        // DTOからモデルへの変換テスト
+        let model = dto.toModel()
+        
+        XCTAssertEqual(model.id, 42)
+        XCTAssertEqual(model.name, "Direct Init")
+        XCTAssertEqual(model.isActive, false)
+    }
+
+    // MARK: - ネストされたDTOのパラメータ初期化テスト
+    public func testNestedParameterInitialization() {
+        // ネストされたDTOの初期化
+        let addressDTO = AddressDTO(street: "456 Park Ave", city: "Boston")
+        
+        // メインDTOの初期化
+        let personDTO = PersonDTO(name: "Jane", address: addressDTO)
+        
+        XCTAssertEqual(personDTO.name, "Jane")
+        XCTAssertEqual(personDTO.address.street, "456 Park Ave")
+        XCTAssertEqual(personDTO.address.city, "Boston")
+        
+        // DTOからモデルへの変換テスト
+        let convertedPerson = personDTO.toModel()
+        
+        XCTAssertEqual(convertedPerson.name, "Jane")
+        XCTAssertEqual(convertedPerson.address.street, "456 Park Ave")
+        XCTAssertEqual(convertedPerson.address.city, "Boston")
+    }
+
+    // MARK: - 配列とオプショナル型のパラメータ初期化テスト
+    public func testComplexParameterInitialization() {
+        // 基本DTOの初期化
+        let item1DTO = ProductItemDTO(id: 10, name: "Item X")
+        let item2DTO = ProductItemDTO(id: 20, name: "Item Y")
+        
+        // 複雑なDTOの初期化
+        let containerDTO = ContainerDTO(
+            items: [item1DTO, item2DTO],
+            optionalItem: item1DTO,
+            optionalItems: [item2DTO],
+            regularValue: "Test Value"
+        )
+        
+        // アサーション
+        XCTAssertEqual(containerDTO.items.count, 2)
+        XCTAssertEqual(containerDTO.items[0].id, 10)
+        XCTAssertEqual(containerDTO.items[1].name, "Item Y")
+        XCTAssertEqual(containerDTO.optionalItem?.id, 10)
+        XCTAssertEqual(containerDTO.optionalItems?.count, 1)
+        XCTAssertEqual(containerDTO.optionalItems?[0].name, "Item Y")
+        XCTAssertEqual(containerDTO.regularValue, "Test Value")
+        
+        // DTOからモデルへの変換テスト
+        let convertedContainer = containerDTO.toModel()
+        
+        XCTAssertEqual(convertedContainer.items.count, 2)
+        XCTAssertEqual(convertedContainer.items[0].id, 10)
+        XCTAssertEqual(convertedContainer.optionalItem?.id, 10)
+        XCTAssertEqual(convertedContainer.regularValue, "Test Value")
+    }
+
+    // MARK: - ミックスパターンのテスト（モデル→DTO→パラメータ→DTO→モデル）
+    public func testMixedInitializationPatterns() {
+        // 1. 最初のモデルを作成
+        let originalModel = BasicModel(id: 100, name: "Original", isActive: true)
+        
+        // 2. モデルからDTOへ変換
+        let firstDTO = originalModel.toDTO()
+        
+        // 3. DTOのプロパティを使って新しいDTOを初期化
+        let secondDTO = BasicModelDTO(
+            id: firstDTO.id,
+            name: firstDTO.name + " Modified",
+            isActive: !firstDTO.isActive
+        )
+        
+        // 4. 新しいDTOをモデルに変換
+        let finalModel = secondDTO.toModel()
+        
+        // アサーション
+        XCTAssertEqual(finalModel.id, 100)
+        XCTAssertEqual(finalModel.name, "Original Modified")
+        XCTAssertEqual(finalModel.isActive, false)
     }
 }
