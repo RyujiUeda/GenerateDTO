@@ -5,9 +5,10 @@ GenerateDTOは、SwiftのMacro機能を活用した自動DTOジェネレータ�
 ## 特徴
 
 - クラスから対応するDTO構造体を自動生成
+- 生成されるDTOはSendableに準拠しているため、actor間での安全なデータ共有が可能
 - モデルクラスとDTO間の相互変換メソッドを提供
 - ネストされたDTOのサポート（コレクション型やオプショナル型にも対応）
-- 完全に型安全な実装
+
 
 ## インストール方法
 
@@ -17,7 +18,7 @@ GenerateDTOは、SwiftのMacro機能を活用した自動DTOジェネレータ�
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/RyujiUeda/GenerateDTO.git", from: "1.0.0")
+    .package(url: "https://github.com/RyujiUeda/GenerateDTO.git", from: "0.1.0")
 ]
 ```
 
@@ -56,40 +57,6 @@ public final class Person {
 }
 ```
 
-これにより、次のようなコードが自動生成されます：
-
-```swift
-// 生成されるDTO構造体
-public struct PersonDTO: DTO {
-    public var id: UUID
-    public var name: String
-    public var age: Int
-    
-    public init(model: Person) {
-        self.id = model.id
-        self.name = model.name
-        self.age = model.age
-    }
-    
-    public func toModel() -> Person {
-        .init(dto: self)
-    }
-}
-
-// 元のクラスに追加される拡張
-extension Person: DTOConvertible {
-    public func toDTO() -> PersonDTO {
-        .init(model: self)
-    }
-    
-    public required init(dto: PersonDTO) {
-        self.id = dto.id
-        self.name = dto.name
-        self.age = dto.age
-    }
-}
-```
-
 ### ネストされたDTOの処理
 
 他のDTOに変換可能なクラスをプロパティとして持つ場合、`nestedDTOs`パラメータを使用して指定します：
@@ -122,6 +89,81 @@ print(type(of: personDTO)) // PersonDTO
 let reconstructedPerson = personDTO.toModel()
 print(type(of: reconstructedPerson)) // Person
 ```
+
+### Concurrency対応とactor間のデータ共有
+
+GenerateDTOで生成されるDTOはすべて`Sendable`プロトコルに準拠しているため、Swift Concurrencyモデルにおけるactor boundaryを安全に越えることができます。これにより、Sendableに対応していないモデルオブジェクトでも、DTOに変換することで異なるactor間で安全にデータを共有できます。
+
+```swift
+// モデルクラス（Sendableではない）
+class UserProfile {
+    var name: String
+    var settings: [String: Any] // Any型を含むためSendableに適合できない
+    
+    init(name: String, settings: [String: Any]) {
+        self.name = name
+        self.settings = settings
+    }
+}
+
+// DTOの生成（Sendableに準拠）
+@GenerateDTO
+class UserProfileDTO {
+    var name: String
+    var settingsJSON: String // JSON文字列に変換してSendable対応
+    
+    init(name: String, settingsJSON: String) {
+        self.name = name
+        self.settingsJSON = settingsJSON
+    }
+}
+
+// 使用例
+actor UserManager {
+    func updateProfile(dto: UserProfileDTO) async {
+        // DTOを安全に受け取り、処理できる
+        let profile = dto.toModel()
+        // ...処理...
+    }
+}
+
+// 別の場所で
+let profile = UserProfile(...)
+let dto = profile.toDTO() // Sendableに準拠したDTOに変換
+
+// actorにDTOを安全に渡す
+await userManager.updateProfile(dto: dto)
+```
+
+これにより、複雑なデータ構造を持つモデルでも、actor boundaryを超えて安全に値を受け渡すことが可能になります。
+
+### パラメータ化されたイニシャライザの使用
+
+モデルクラスのインスタンスを持たなくても、DTOを直接作成することができます：
+
+```swift
+// DTOを直接作成
+let addressDTO = AddressDTO(
+    street: "東京都中央区銀座1-1-1", 
+    city: "東京"
+)
+
+let personDTO = PersonDTO(
+    id: UUID(),
+    name: "佐藤花子", 
+    age: 28,
+    address: addressDTO
+)
+
+// 必要に応じてモデルに変換
+let person = personDTO.toModel()
+```
+
+これは特に以下のような場合に役立ちます：
+- テストデータの作成
+- JSONをDTOに直接デシリアライズ
+- ユーザー入力からDTOを構築
+- DTO互換のデータを返すAPIの操作
 
 ## サポートしている型の変換
 
