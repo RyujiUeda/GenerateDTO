@@ -4,7 +4,12 @@ import CompilerPluginSupport
 
 let package = Package(
     name: "GenerateDTO",
-    platforms: [.macOS(.v12), .iOS(.v16), .tvOS(.v16), .watchOS(.v9)],
+    platforms: [
+        .macOS(.v12),
+        .iOS(.v16),
+        .tvOS(.v16),
+        .watchOS(.v9)
+    ],
     products: [
         .library(
             name: "GenerateDTO",
@@ -19,7 +24,7 @@ let package = Package(
         .package(url: "https://github.com/apple/swift-syntax.git", from: "600.0.0"),
     ],
     targets: [
-        // マクロの実装
+        // MARK: - マクロ実装
         .macro(
             name: "GenerateDTOMacros",
             dependencies: [
@@ -28,17 +33,19 @@ let package = Package(
             ]
         ),
         
-        // マクロライブラリ
+        // MARK: - ライブラリ
         .target(
             name: "GenerateDTO",
             dependencies: ["GenerateDTOMacros"]
         ),
+        
+        // MARK: - テスト
         .testTarget(
             name: "GenerateDTOTests",
             dependencies: ["GenerateDTO"]
         ),
         
-        // サンプルクライアント
+        // MARK: - サンプル実装
         .executableTarget(
             name: "GenerateDTOClient",
             dependencies: ["GenerateDTO"]
