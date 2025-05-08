@@ -14,7 +14,7 @@ public protocol DTOConvertible {
     init(dto: DTOType)
 }
 
-public protocol DTO: Sendable {
+public protocol DTO: Sendable, Equatable {
     associatedtype Model: DTOConvertible
     init(model: Model)
     func toModel() -> Model
